@@ -1,40 +1,67 @@
-# CampusFix — NIT Hamirpur
+# CampusFix
 
-Private campus issue reporting and resolution for NIT Hamirpur. Product requirements and stack decisions are in [PRD.md](PRD.md) and [TECH_STACK.md](TECH_STACK.md).
+CampusFix is a private campus issue reporting and resolution app for the National Institute of Technology Hamirpur (NIT Hamirpur). Students and staff can report campus issues, and authorized campus staff can review and update reports within their assigned areas.
 
-## Local setup
+## How it works
 
-Requires Node.js 20.9 or newer and npm.
+1. A reporter signs in and submits a campus area, issue description, and optional photo.
+2. CampusFix saves the report as **New** and records its history.
+3. Authorized staff review their area-scoped queue and update report status or priority.
+4. Reporters can follow their reports and receive in-app notifications when status changes.
 
-1. Install packages with `npm install`.
-2. Start the local Supabase services with `npm run db:start` (requires Docker or another Docker-compatible runtime).
-3. Copy `.env.example` to `.env.local` and set the local Supabase URL and publishable key printed by the CLI.
-4. Start the app with `npm run dev` and open <http://localhost:3000>.
+Current statuses are **New**, **Assigned**, **In progress**, **Resolved**, and **Reopened**. AI triage and duplicate suggestions are planned, but are not implemented yet. CampusFix is not an emergency service.
 
-No hosted Supabase project or NITH SSO provider is configured yet. Do not add service-role keys to `NEXT_PUBLIC_*` variables or commit `.env.local`.
+## Built with
 
-## Available commands
+- Next.js App Router, React, and TypeScript
+- Supabase Auth, PostgreSQL, Row Level Security, and private Storage
+- Vitest and Playwright
 
-- `npm run dev` — local development server
-- `npm run build` — production build
-- `npm run lint` — ESLint
-- `npm run db:start` / `npm run db:stop` — local Supabase services
-- `npm test` — Vitest unit tests
-- `npm run test:e2e` — Playwright browser tests
+See [PRD.md](PRD.md) for product scope and open campus decisions, and [TECH_STACK.md](TECH_STACK.md) for the architecture and deployment requirements.
 
-Playwright browser binaries are installed separately when running browser tests with `npx playwright install`.
-# CampusFix backend setup
+## Run locally
 
-The backend uses Supabase Auth, PostgreSQL, RLS, and private Storage. Apply migrations in filename order: `supabase/migrations/202610100001_campusfix_backend.sql`, `supabase/migrations/202610100002_fix_profile_policy_recursion.sql`, then `supabase/migrations/202610100003_finish_supabase_access.sql`. The third migration is repeat-safe and reapplies the final policy and public lookup permissions. Configure `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in the app environment. Do not put a service-role key in the browser or app environment.
+Requirements: Node.js 20.9 or newer, npm, and Docker (or a Docker-compatible runtime) for local Supabase.
 
-New users are reporters by default. A campus administrator must explicitly grant staff/admin roles and staff area memberships in the trusted Supabase SQL editor after verifying campus authorization; an email domain does not grant privileges. Review the seeded locations and categories with NITH before launch. Photo uploads use the private `report-photos` bucket, accept JPEG/PNG/WebP, and are limited to 5 MiB.
+```bash
+npm install
+npm run db:start
+```
 
-## API
+In a second terminal, run `npx supabase status` and copy the local API URL and anon key into `.env.local` using the variable names below. The anon key is a public client key; never use a service-role key in the app.
 
-- `GET /api/areas` and `GET /api/categories` return active lookup values.
-- `GET /api/reports` returns reports allowed by the signed-in user's RLS scope.
-- `POST /api/reports` accepts `{ "areaId": "uuid", "description": "...", "locationDetail": "..." }` and creates the report plus its initial audit event.
-- `PATCH /api/reports/:id` accepts staff workflow fields: `status`, `priority`, `categoryId`, and `assignedTo`. Status transitions, scope, audit events, and notifications are enforced in PostgreSQL.
-- `GET /api/notifications` lists the current user's notifications; `PATCH /api/notifications` accepts `{ "id": 1 }` to mark one read.
+```dotenv
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-local-anon-key
+```
 
-All routes require a Supabase Auth session except active lookup reads. Reports are private under RLS. AI suggestions and duplicate candidate tables are present for a future worker, but no AI processing or staff provisioning UI is configured yet.
+Then start the app:
+
+```bash
+npm run dev
+```
+
+Open <http://localhost:3000>. Local Supabase migrations are applied by the CLI. The local email inbox for sign-in links is available through Supabase Studio at <http://127.0.0.1:54323> (email capture runs on port 54324).
+
+## Commands
+
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the Next.js development server |
+| `npm run build` | Build the production app |
+| `npm run lint` | Run ESLint |
+| `npm test` | Run Vitest tests |
+| `npm run test:e2e` | Run Playwright browser tests |
+| `npm run db:start` | Start local Supabase services |
+| `npm run db:stop` | Stop local Supabase services |
+
+Playwright browser binaries may need to be installed with `npx playwright install` before browser tests can run.
+
+## Security and production readiness
+
+- Reports are private to the reporter and authorized staff. Database access is protected with Row Level Security.
+- Staff privileges must be explicitly granted by an administrator; an email domain alone does not grant access.
+- Photos are stored in a private bucket. Never commit `.env.local` or expose service-role credentials.
+- NIT Hamirpur must approve identity provider, staff provisioning, location data, photo policy, hosting, data residency, and operational procedures before launch.
+
+The current implementation does not include an AI worker, staff provisioning interface, or hosted NITH SSO configuration.
