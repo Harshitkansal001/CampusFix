@@ -33,6 +33,8 @@ export default function ReporterHome() {
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [areas, setAreas] = useState<Area[]>([])
   const [reports, setReports] = useState<Report[]>([])
+  const [hasMoreReports, setHasMoreReports] = useState(false)
+  const [loadingMoreReports, setLoadingMoreReports] = useState(false)
   const [loading, setLoading] = useState(() => isSupabaseConfigured())
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState('')
@@ -54,10 +56,13 @@ export default function ReporterHome() {
         if (alive) setAreas(result.areas)
       }
       if (user) {
-        const reportResponse = await fetch('/api/reports')
+        const reportResponse = await fetch('/api/reports?offset=0')
         if (reportResponse.ok) {
           const result = await reportResponse.json()
-          if (alive) setReports(result.reports)
+          if (alive) {
+            setReports(result.reports)
+            setHasMoreReports(result.hasMore)
+          }
         }
       }
       if (alive) setLoading(false)
@@ -66,6 +71,21 @@ export default function ReporterHome() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(() => { window.setTimeout(() => void load(), 0) })
     return () => { alive = false; subscription.unsubscribe() }
   }, [supabase])
+
+  async function loadMoreReports() {
+    setLoadingMoreReports(true)
+    try {
+      const response = await fetch(`/api/reports?offset=${reports.length}`)
+      if (!response.ok) throw new Error('Unable to load more reports.')
+      const result = await response.json()
+      setReports((current) => [...current, ...result.reports])
+      setHasMoreReports(result.hasMore)
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Unable to load more reports.')
+    } finally {
+      setLoadingMoreReports(false)
+    }
+  }
 
   async function submitReport(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -158,7 +178,7 @@ export default function ReporterHome() {
           <div className="report-list">{loading ? <p className="empty-reports">Loading your reports…</p> : !userEmail ? <p className="empty-reports"><Link href="/login">Sign in</Link> to view your private reports.</p> : reports.length ? reports.map((report) => {
             const tone = report.status === 'in_progress' || report.status === 'reopened' ? 'active' : 'assigned'
             return <article className="report-row" key={report.id}><span className={`status-mark ${tone}`} aria-hidden="true" /><div className="report-info"><div className="report-id">{report.reference} <span>·</span> {areaNames.get(report.area_id) ?? 'Campus area'} · {new Date(report.created_at).toLocaleDateString()}</div><h4>{report.description}</h4></div><span className={`status-pill ${tone}`}>{statusLabels[report.status] ?? report.status}</span><span className="row-arrow" aria-hidden="true">↗</span></article>
-          }) : <p className="empty-reports">No reports yet. Use the form above to let the campus team know.</p>}</div>
+          }) : <p className="empty-reports">No reports yet. Use the form above to let the campus team know.</p>}{hasMoreReports && <button className="text-link" type="button" disabled={loadingMoreReports} onClick={() => void loadMoreReports()}>{loadingMoreReports ? 'Loading…' : 'Load more reports'}</button>}</div>
           <div className="panel-bottom"><span><span className="privacy-dot" /> Only you can see your reports</span><span>NEW <i>→</i> ASSIGNED <i>→</i> IN PROGRESS <i>→</i> RESOLVED</span></div>
         </div></div>
       </section>

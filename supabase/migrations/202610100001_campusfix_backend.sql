@@ -84,12 +84,15 @@ create index notifications_user_created on public.notifications (user_id, create
 create function public.is_staff_for_area(target_area uuid) returns boolean
 language sql stable security definer set search_path = '' as $$
   select exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.role = 'admin')
-    or exists (select 1 from public.staff_area_memberships m where m.user_id = (select auth.uid()) and m.area_id = target_area);
+    or exists (select 1 from public.staff_area_memberships m join public.profiles p on p.id = m.user_id
+      where m.user_id = (select auth.uid()) and m.area_id = target_area and p.role = 'staff');
 $$;
 create function public.is_admin() returns boolean
 language sql stable security definer set search_path = '' as $$
   select exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.role = 'admin');
 $$;
+revoke all on function public.is_admin() from public;
+grant execute on function public.is_admin() to anon, authenticated;
 
 create function public.handle_new_user() returns trigger language plpgsql security definer set search_path = '' as $$
 begin
@@ -127,7 +130,8 @@ begin
     (current_report.status = 'reopened' and p_status in ('assigned', 'in_progress', 'resolved'))
   ) then raise exception 'Invalid status transition' using errcode = '22023'; end if;
   if p_assigned_to is not null and not exists (
-    select 1 from public.staff_area_memberships m where m.user_id = p_assigned_to and m.area_id = current_report.area_id
+    select 1 from public.staff_area_memberships m join public.profiles p on p.id = m.user_id
+    where m.user_id = p_assigned_to and m.area_id = current_report.area_id and p.role = 'staff'
   ) then raise exception 'Assignee is not assigned to this area' using errcode = '22023'; end if;
   update public.reports set status = coalesce(p_status, status), priority = coalesce(p_priority, priority),
     category_id = coalesce(p_category_id, category_id), assigned_to = coalesce(p_assigned_to, assigned_to), updated_at = now()
@@ -180,6 +184,7 @@ revoke insert, update, delete on public.profiles, public.areas, public.categorie
   public.reports, public.report_events, public.notifications, public.ai_suggestions, public.duplicate_suggestions from anon, authenticated;
 grant select on public.profiles, public.areas, public.categories, public.staff_area_memberships,
   public.reports, public.report_events, public.notifications, public.ai_suggestions, public.duplicate_suggestions to authenticated;
+grant select on public.areas, public.categories to anon;
 grant update (read_at) on public.notifications to authenticated;
 grant usage, select on sequence public.report_events_id_seq, public.notifications_id_seq,
   public.ai_suggestions_id_seq to authenticated;
