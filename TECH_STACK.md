@@ -8,6 +8,7 @@
 | UI | React with accessible, responsive components | Mobile-first reporting and desktop staff queue; keyboard and screen-reader support are required. |
 | Backend/API | Next.js Route Handlers and server-only domain modules | Validate submissions, enforce access, update workflow, write history/notifications, and issue private photo upload permissions. |
 | Database | Supabase-managed PostgreSQL | Relational report/workflow data, constraints, indexes, and Row Level Security (RLS). |
+| Database tooling | Supabase CLI, local development only | Version-controlled migrations and a local Auth/Storage/Postgres stack for development. |
 | Authentication | Supabase Auth with NITH-approved OIDC/SAML SSO when available | Campus identity and sessions. Confirm provider and provisioning with NITH IT before implementation; otherwise use an IT-approved email sign-in method. |
 | Photo storage | Private Supabase Storage bucket | Optional report photos; authorized, short-lived access; server-side file validation. |
 | Background jobs | Supabase Queues/Edge Functions or a small worker | AI triage and duplicate suggestions run after report persistence, with retries and idempotent processing. Choose the simplest option supported by deployment and queue guarantees. |
