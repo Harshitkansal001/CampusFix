@@ -25,7 +25,7 @@ No hosted Supabase project or NITH SSO provider is configured yet. Do not add se
 Playwright browser binaries are installed separately when running browser tests with `npx playwright install`.
 # CampusFix backend setup
 
-The backend uses Supabase Auth, PostgreSQL, RLS, and private Storage. Apply `supabase/migrations/202610100001_campusfix_backend.sql` to a new Supabase project, then configure `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in the app environment. Do not put a service-role key in the browser or app environment.
+The backend uses Supabase Auth, PostgreSQL, RLS, and private Storage. Apply migrations in filename order: `supabase/migrations/202610100001_campusfix_backend.sql`, then `supabase/migrations/202610100002_fix_profile_policy_recursion.sql`. Configure `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in the app environment. Do not put a service-role key in the browser or app environment.
 
 New users are reporters by default. A campus administrator must explicitly grant staff/admin roles and staff area memberships in the trusted Supabase SQL editor after verifying campus authorization; an email domain does not grant privileges. Review the seeded locations and categories with NITH before launch. Photo uploads use the private `report-photos` bucket, accept JPEG/PNG/WebP, and are limited to 5 MiB.
 

@@ -86,6 +86,10 @@ language sql stable security definer set search_path = '' as $$
   select exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.role = 'admin')
     or exists (select 1 from public.staff_area_memberships m where m.user_id = (select auth.uid()) and m.area_id = target_area);
 $$;
+create function public.is_admin() returns boolean
+language sql stable security definer set search_path = '' as $$
+  select exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.role = 'admin');
+$$;
 
 create function public.handle_new_user() returns trigger language plpgsql security definer set search_path = '' as $$
 begin
@@ -159,10 +163,10 @@ alter table public.notifications enable row level security;
 alter table public.ai_suggestions enable row level security;
 alter table public.duplicate_suggestions enable row level security;
 
-create policy "Profiles visible to self or admin" on public.profiles for select using (id = (select auth.uid()) or exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.role = 'admin'));
-create policy "Active areas readable" on public.areas for select using (active or exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.role = 'admin'));
-create policy "Categories readable" on public.categories for select using (active or exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.role = 'admin'));
-create policy "Membership readable by self or admin" on public.staff_area_memberships for select using (user_id = (select auth.uid()) or exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.role = 'admin'));
+create policy "Profiles visible to self or admin" on public.profiles for select using (id = (select auth.uid()) or public.is_admin());
+create policy "Active areas readable" on public.areas for select using (active or public.is_admin());
+create policy "Categories readable" on public.categories for select using (active or public.is_admin());
+create policy "Membership readable by self or admin" on public.staff_area_memberships for select using (user_id = (select auth.uid()) or public.is_admin());
 create policy "Reports readable by owner or area staff" on public.reports for select using (reporter_id = (select auth.uid()) or public.is_staff_for_area(area_id));
 create policy "Reports created by self" on public.reports for insert with check (reporter_id = (select auth.uid()));
 create policy "Events readable by owner or area staff" on public.report_events for select using (exists (select 1 from public.reports r where r.id = report_id and (r.reporter_id = (select auth.uid()) or public.is_staff_for_area(r.area_id))));

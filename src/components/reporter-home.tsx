@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -21,7 +22,7 @@ const statusLabels: Record<string, string> = {
 }
 
 function Mark() {
-  return <span className="brand-mark" aria-hidden="true"><span /><span /><span /></span>
+  return <Image className="brand-seal" src="/nith-seal.jpeg" alt="" aria-hidden="true" width={36} height={36} sizes="36px" />
 }
 
 function Arrow() {
@@ -100,7 +101,17 @@ export default function ReporterHome() {
   const areaNames = new Map(areas.map((area) => [area.id, area.name]))
 
   return (
-    <main className="site-shell">
+    <main className="site-shell" style={{ position: 'relative', isolation: 'isolate' }}>
+      <Image
+        className="nith-watermark"
+        src="/nith-seal.jpeg"
+        alt=""
+        aria-hidden="true"
+        width={451}
+        height={443}
+        sizes="(max-width: 680px) 100vw, 680px"
+        style={{ position: 'absolute', zIndex: -1, top: 100, right: '-9%', width: 'min(68vw, 680px)', height: 'auto', pointerEvents: 'none' }}
+      />
       <header className="topbar">
         <a className="brand" href="#top" aria-label="CampusFix home"><Mark /><span>campus<span className="brand-light">fix</span></span></a>
         <div className="campus-label"><span className="live-dot" /> NIT HAMIRPUR <span className="label-divider">/</span> CAMPUS SERVICES</div>

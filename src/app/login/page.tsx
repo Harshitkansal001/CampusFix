@@ -1,6 +1,7 @@
 'use client'
 
 import { Suspense, useMemo, useState, type FormEvent } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -31,7 +32,7 @@ function LoginForm() {
   }
 
   return <main className="login-shell">
-    <Link className="brand" href="/"><span className="brand-mark" aria-hidden="true"><span /><span /><span /></span><span>campus<span className="brand-light">fix</span></span></Link>
+    <Link className="brand" href="/"><Image className="brand-seal" src="/nith-seal.jpeg" alt="" aria-hidden="true" width={36} height={36} sizes="36px" /><span>campus<span className="brand-light">fix</span></span></Link>
     <section className="login-card">
       <div className="eyebrow"><span className="eyebrow-line" /> NIT HAMIRPUR</div>
       <h1>Sign in to<br /><em>CampusFix.</em></h1>
