@@ -33,6 +33,7 @@ export default function ReporterHome() {
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [areas, setAreas] = useState<Area[]>([])
   const [reports, setReports] = useState<Report[]>([])
+  const [role, setRole] = useState('reporter')
   const [hasMoreReports, setHasMoreReports] = useState(false)
   const [loadingMoreReports, setLoadingMoreReports] = useState(false)
   const [loading, setLoading] = useState(() => isSupabaseConfigured())
@@ -50,6 +51,10 @@ export default function ReporterHome() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!alive) return
       setUserEmail(user?.email ?? null)
+      if (user) {
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
+        if (alive) setRole(profile?.role ?? 'reporter')
+      } else setRole('reporter')
       const areaResponse = await fetch('/api/areas')
       if (areaResponse.ok) {
         const result = await areaResponse.json()
@@ -135,7 +140,7 @@ export default function ReporterHome() {
       <header className="topbar">
         <a className="brand" href="#top" aria-label="CampusFix home"><Mark /><span>campus<span className="brand-light">fix</span></span></a>
         <div className="campus-label"><span className="live-dot" /> NIT HAMIRPUR <span className="label-divider">/</span> CAMPUS SERVICES</div>
-        {userEmail ? <button className="signin-link" onClick={() => void supabase?.auth.signOut()}>Sign out <span aria-hidden="true">↗</span></button> : <Link className="signin-link" href="/login">Sign in <span aria-hidden="true">↗</span></Link>}
+        <nav className="page-nav">{userEmail && <Link href="/notifications">Notifications</Link>}{['staff', 'admin'].includes(role) && <Link href="/staff">Staff queue</Link>}{userEmail ? <button className="signin-link" onClick={() => void supabase?.auth.signOut()}>Sign out <span aria-hidden="true">↗</span></button> : <Link className="signin-link" href="/login">Sign in <span aria-hidden="true">↗</span></Link>}</nav>
       </header>
 
       <section className="hero" id="top">
@@ -177,7 +182,7 @@ export default function ReporterHome() {
           <div className="panel-top"><div><span className="form-kicker">PRIVATE ACTIVITY</span><h3>Your reports <span>{reports.length.toString().padStart(2, '0')}</span></h3></div><a href="#report">Start a report <span>↗</span></a></div>
           <div className="report-list">{loading ? <p className="empty-reports">Loading your reports…</p> : !userEmail ? <p className="empty-reports"><Link href="/login">Sign in</Link> to view your private reports.</p> : reports.length ? reports.map((report) => {
             const tone = report.status === 'in_progress' || report.status === 'reopened' ? 'active' : 'assigned'
-            return <article className="report-row" key={report.id}><span className={`status-mark ${tone}`} aria-hidden="true" /><div className="report-info"><div className="report-id">{report.reference} <span>·</span> {areaNames.get(report.area_id) ?? 'Campus area'} · {new Date(report.created_at).toLocaleDateString()}</div><h4>{report.description}</h4></div><span className={`status-pill ${tone}`}>{statusLabels[report.status] ?? report.status}</span><span className="row-arrow" aria-hidden="true">↗</span></article>
+            return <Link className="report-row" href={`/reports/${report.id}`} key={report.id}><span className={`status-mark ${tone}`} aria-hidden="true" /><div className="report-info"><div className="report-id">{report.reference} <span>·</span> {areaNames.get(report.area_id) ?? 'Campus area'} · {new Date(report.created_at).toLocaleDateString()}</div><h4>{report.description}</h4></div><span className={`status-pill ${tone}`}>{statusLabels[report.status] ?? report.status}</span><span className="row-arrow" aria-hidden="true">↗</span></Link>
           }) : <p className="empty-reports">No reports yet. Use the form above to let the campus team know.</p>}{hasMoreReports && <button className="text-link" type="button" disabled={loadingMoreReports} onClick={() => void loadMoreReports()}>{loadingMoreReports ? 'Loading…' : 'Load more reports'}</button>}</div>
           <div className="panel-bottom"><span><span className="privacy-dot" /> Only you can see your reports</span><span>NEW <i>→</i> ASSIGNED <i>→</i> IN PROGRESS <i>→</i> RESOLVED</span></div>
         </div></div>

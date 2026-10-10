@@ -19,7 +19,7 @@ export async function GET(request: Request) {
   const offset = reportOffset.safeParse(new URL(request.url).searchParams.get('offset') ?? 0)
   if (!offset.success) return Response.json({ error: 'Invalid offset' }, { status: 400 })
 
-  const { data, error } = await supabase.from('reports').select('id,reference,area_id,location_detail,description,status,priority,category_id,assigned_to,photo_path,created_at,updated_at').order('created_at', { ascending: false }).range(offset.data, offset.data + pageSize - 1)
+  const { data, error } = await supabase.from('reports').select('id,reference,area_id,location_detail,description,status,priority,category_id,assigned_to,photo_path,created_at,updated_at,areas(name)').order('created_at', { ascending: false }).range(offset.data, offset.data + pageSize - 1)
   if (error) return Response.json({ error: 'Unable to load reports' }, { status: 500 })
   return Response.json({ reports: data, hasMore: data.length === pageSize })
 }
