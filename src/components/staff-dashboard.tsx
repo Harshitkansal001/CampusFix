@@ -3,21 +3,23 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { isSupabaseConfigured } from '@/lib/supabase/env'
 
 type Report = { id: string; reference: string; description: string; status: string; priority: string | null; created_at: string; areas: { name: string } | null }
 const labels: Record<string, string> = { new: 'New', assigned: 'Assigned', in_progress: 'In progress', resolved: 'Resolved', reopened: 'Reopened' }
 const nextStatuses: Record<string, string[]> = { new: ['assigned'], assigned: ['in_progress', 'resolved'], in_progress: ['resolved'], resolved: ['reopened'], reopened: ['assigned', 'in_progress', 'resolved'] }
 
 export default function StaffDashboard() {
-  const supabase = useMemo(() => createClient(), [])
+  const supabase = useMemo(() => isSupabaseConfigured() ? createClient() : null, [])
   const [reports, setReports] = useState<Report[]>([])
   const [hasMore, setHasMore] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
-  const [message, setMessage] = useState('Loading staff queue…')
+  const [message, setMessage] = useState(() => supabase ? 'Loading staff queue…' : 'CampusFix is not configured. Set the Supabase environment variables to continue.')
   const [busyId, setBusyId] = useState('')
 
   useEffect(() => {
     let active = true
+    if (!supabase) return () => { active = false }
     void (async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { if (active) setMessage('Sign in with an authorized staff account.'); return }

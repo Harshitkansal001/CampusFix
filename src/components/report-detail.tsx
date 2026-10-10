@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { isSupabaseConfigured } from '@/lib/supabase/env'
 
 type Report = {
   id: string; reference: string; area_id: string; location_detail: string | null; description: string
@@ -14,15 +15,16 @@ const labels: Record<string, string> = { new: 'New', assigned: 'Assigned', in_pr
 const nextStatuses: Record<string, string[]> = { new: ['assigned'], assigned: ['in_progress', 'resolved'], in_progress: ['resolved'], resolved: ['reopened'], reopened: ['assigned', 'in_progress', 'resolved'] }
 
 export default function ReportDetail({ id }: { id: string }) {
-  const supabase = useMemo(() => createClient(), [])
+  const supabase = useMemo(() => isSupabaseConfigured() ? createClient() : null, [])
   const [report, setReport] = useState<Report | null>(null)
   const [events, setEvents] = useState<Event[]>([])
   const [role, setRole] = useState('reporter')
-  const [message, setMessage] = useState('Loading report…')
+  const [message, setMessage] = useState(() => supabase ? 'Loading report…' : 'CampusFix is not configured. Set the Supabase environment variables to continue.')
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     let active = true
+    if (!supabase) return () => { active = false }
     void (async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { if (active) setMessage('Sign in to view this report.'); return }
