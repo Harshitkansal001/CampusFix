@@ -27,6 +27,14 @@ CampusFix is a campus issue reporting app being developed for the **National Ins
 
 ---
 
+## 🖥️ Preview
+
+<p align="center">
+  <img src="assets/campusfix-ui.png" alt="CampusFix issue reporting interface for NIT Hamirpur" width="95%" />
+</p>
+
+---
+
 ## 🚀 What works today
 
 <table>
